@@ -1,0 +1,1495 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Янюк Дмитрий</title>
+  <script src="./js/react.development.js"></script>
+  <script src="./js/react-dom.development.js"></script>
+  <script src="./js/babel.min.js"></script>
+  <script type="text/babel" src="./js/Data_Students.js"></script>
+  <script type="text/babel" src="./js/Data_Events.js"></script>
+  <script type="text/babel" src="./js/Data_Speciality.js"></script>
+  <script type="text/babel" src="./js/Data_Companies.js"></script>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const Regim = {
+      S: 'Студенты',
+      C: 'Компании',
+      E: 'События компаний',
+    };
+
+    const SelectedMenuOption = {
+      CREATE_STUDENT: 'CREATE_STUDENT',
+      UPDATE_STUDENT: 'UPDATE_STUDENT',
+      DELETE_STUDENT: 'DELETE_STUDENT',
+      CREATE_COMPANY: 'CREATE_COMPANY',
+      UPDATE_COMPANY: 'UPDATE_COMPANY',
+      DELETE_COMPANY: 'DELETE_COMPANY',
+      VIEW_STUDENT_FILTER: 'VIEW_STUDENT_FILTER',
+    }
+
+    const EventOptions = {
+      CREATE_EVENT: 'CREATE_EVENT',
+      UPDATE_EVENT: 'UPDATE_EVENT',
+      REMOVE_EVENT: 'REMOVE_EVENT',
+      FILTER_EVENTS: 'FILTER_EVENTS',
+    }
+
+    const SYears = [
+      { id: 0, value: "All" },
+      { id: 2010, value: 2010 },
+      { id: 2011, value: 2011 },
+      { id: 2012, value: 2012 },
+      { id: 2013, value: 2013 },
+      { id: 2014, value: 2014 },
+      { id: 2015, value: 2015 },
+      { id: 2016, value: 2016 },
+      { id: 2017, value: 2017 },
+      { id: 2018, value: 2018 },
+      { id: 2019, value: 2019 },
+      { id: 2020, value: 2020 },
+    ]
+
+    class App extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { selectedItem: 'Not selected', };
+      }
+
+      onSelectRegim = (id) => {
+        this.setState({ selectedItem: id });
+      };
+
+      render() {
+        const { selectedItem } = this.state;
+        const selectedRegim = Regim[selectedItem];
+
+        return (
+          <div>
+            <Navigation regim={Regim} selectedItem={selectedItem} onSelect={this.onSelectRegim} />
+            <Panel selectedRegim={selectedRegim} />
+          </div>
+        );
+      }
+    }
+
+    const Navigation = props => {
+      const { regim, selectedItem, onSelect } = props;
+
+      return (
+        <div className="navigation-container">
+          {Object.entries(regim).map(([key, value]) => (
+            <div
+              className={selectedItem === key ? "selected-navigation-item" : "navigation-item"}
+              key={key}
+              onClick={() => onSelect(key)}
+            >
+              {value}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    class Panel extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          selectedRegim: 'Not selected',
+          selectedStudent: { id: 0, name: '', syear: 0, spec: '' },
+          selectedCompany: { id: 0, name: '' },
+          students: Data_Students,
+          specialities: Data_Speciality,
+          events: Data_Events,
+          companies: Data_Companies,
+          studentFilter: {
+            name: '',
+            spec: 'All',
+            year: 0,
+          },
+          eventFilter: {
+            text: '',
+            date: '',
+          }
+        };
+      }
+
+      componentDidUpdate(prevProps, prevState) {
+        if (prevProps.selectedRegim !== this.props.selectedRegim) {
+          this.setState({
+            selectedRegim: this.props.selectedRegim, studentFilter: {
+              name: '',
+              spec: 'All',
+              year: 0,
+            },
+            eventFilter: {
+              text: '',
+              date: '',
+            },
+            students: Data_Students,
+            specialities: Data_Speciality,
+            events: Data_Events,
+            companies: Data_Companies,
+          });
+        }
+      }
+
+      selectStudent = (student) => {
+        this.setState({
+          selectedStudent: student
+        })
+      }
+
+      addStudent = (student) => {
+        const { students } = this.state;
+
+        this.setState({
+          students: students.concat({ ...student, syear: Number(student.syear), group: Number(student.group) }),
+        });
+        Data_Students.push({ ...student, syear: Number(student.syear), group: Number(student.group) });
+      }
+
+      updateStudent = (updatedStudent) => {
+        const { students } = this.state;
+
+        this.setState({
+          students: students.map(st => {
+            return st.id === updatedStudent.id
+              ? { ...updatedStudent, syear: Number(updatedStudent.syear), group: Number(updatedStudent.group) }
+              : st
+          }),
+          selectedStudent: updatedStudent,
+        });
+        Data_Students = Data_Students.map(st => {
+          return st.id === updatedStudent.id ? { ...updatedStudent, syear: Number(updatedStudent.syear), group: Number(updatedStudent.group) } : st
+        });
+      };
+
+      removeStudent = (studentId) => {
+        const { students } = this.state;
+
+        this.setState({
+          students: students.filter(st => st.id !== studentId),
+          selectedStudent: { id: 0, name: '', syear: 0, spec: '' },
+        });
+        Data_Students = Data_Students.filter(st => st.id !== studentId);
+      }
+
+      selectCompany = (companyId) => {
+        this.setState({ selectedCompany: companyId });
+      }
+
+      createCompany = (company) => {
+        const { companies } = this.state;
+
+        this.setState({
+          companies: companies.concat(company),
+        });
+        Data_Companies.push(company);
+      }
+
+      updateCompany = (company) => {
+        const { companies } = this.state;
+
+        this.setState({
+          companies: companies.map(cp => {
+            return cp.id === company.id ? { ...company } : cp;
+          }),
+          selectedCompany: company,
+        });
+        Data_Companies = Data_Companies.map(cp => {
+          return cp.id === company.id ? { ...company } : cp;
+        });
+      }
+
+      removeCompany = (companyId) => {
+        const { companies } = this.state;
+
+        this.setState({
+          companies: companies.filter(x => x.id !== companyId),
+          selectedCompany: { id: 0, name: '' },
+        });
+        Data_Companies = Data_Companies.filter(x => x.id !== companyId);
+      }
+
+      addStudentEvent = (studentEvent) => {
+        const { events } = this.state;
+
+        this.setState({
+          events: events.concat(studentEvent),
+        });
+        Data_Events.push(studentEvent);
+      }
+
+      updateStudentEvent = (studentEvent) => {
+        const { events } = this.state;
+
+        this.setState({
+          events: events.map(ev => {
+            return ev.id === studentEvent.id ? { ...studentEvent } : ev
+          }),
+        });
+        Data_Events = Data_Events.map(ev => {
+          return ev.id === studentEvent.id ? { ...studentEvent } : ev
+        })
+      }
+
+      removeStudentEvent = (studentEventId) => {
+        const { events } = this.state;
+
+        this.setState({
+          events: events.filter(ev => ev.id !== studentEventId),
+        });
+        Data_Events = Data_Events.filter(ev => ev.id !== studentEventId);
+      }
+
+      onChangeFilterField = (e) => {
+        const { target: { value, name } } = e;
+
+        this.setState(prevState => ({
+          ...prevState,
+          studentFilter: {
+            ...prevState.studentFilter,
+            [name]: value,
+          },
+          students: Data_Students.filter((st, index) => {
+            let matchesName;
+            let matchesSpec;
+            let matchesYear;
+
+            if (name === 'name') {
+              matchesName = value ? new RegExp(`^(${value}).*$`).test(st.name) : true;
+            } else {
+              matchesName = prevState.studentFilter.name
+                ? new RegExp(`^(${prevState.studentFilter.name}).*$`).test(st.name)
+                : true;
+            }
+
+            if (name === 'year') {
+              matchesYear = Number(value) ? st.syear === Number(value) : true;
+            } else {
+              matchesYear = Number(prevState.studentFilter.year) ? st.syear === Number(prevState.studentFilter.year) : true;
+            }
+
+            if (name === 'spec') {
+              matchesSpec = value !== 'All' ? st.spec === value : true;
+            } else {
+              matchesSpec = prevState.studentFilter.spec !== 'All'
+                ? st.spec === prevState.studentFilter.spec
+                : true;
+            }
+
+            return matchesName && matchesSpec && matchesYear;
+          }),
+        }));
+      }
+
+      onChangeEventFilterField = (e) => {
+        const { target: { value, name } } = e;
+
+        this.setState(prevState => ({
+          ...prevState,
+          eventFilter: {
+            ...prevState.eventFilter,
+            [name]: value,
+          },
+          events: Data_Events.filter(ev => {
+            let matchesText;
+            let matchesDate;
+
+            if (name === 'text') {
+              matchesText = value ? new RegExp(`^${value}.*$`).test(ev.text) : true;
+            } else {
+              matchesText = prevState.eventFilter.text
+                ? new RegExp(`^(${prevState.eventFilter.text}).*$`).test(ev.text)
+                : true;
+            }
+
+            if (name === 'date') {
+              matchesDate = value ? new RegExp(`^(${value}).*$`).test(ev.date) : true;
+            } else {
+              matchesDate = prevState.eventFilter.date
+                ? new RegExp(`^(${prevState.eventFilter.date})м`).test(ev.date)
+                : true;
+            }
+
+            return matchesText && matchesDate;
+          }),
+        }));
+      }
+
+      resetStudentFilter = () => {
+        this.setState({
+          studentFilter: {
+            name: '',
+            spec: 'All',
+            year: 0,
+          },
+          students: Data_Students,
+        });
+      }
+
+      resetEventsFilter = () => {
+        this.setState({ eventFilter: { text: '', date: '', }, events: Data_Events });
+      }
+
+      renderTabPage = () => {
+        const {
+          selectedRegim,
+          selectedCompany,
+          companies,
+          selectedStudent,
+          students,
+          specialities,
+          events,
+          studentFilter,
+          eventFilter
+        } = this.state;
+
+        const selectedCompanyEvents = events.filter(x => x.company.id === selectedCompany.id);
+
+        switch (selectedRegim) {
+          case Regim.S:
+            return (
+              <div className="students-container">
+                <Students
+                  students={students}
+                  selectedStudent={selectedStudent}
+                  specialities={specialities}
+                  years={SYears}
+                  studentFilter={studentFilter}
+                  selectStudent={this.selectStudent}
+                  updateStudent={this.updateStudent}
+                  addStudent={this.addStudent}
+                  removeStudent={this.removeStudent}
+                  resetStudentFilter={this.resetStudentFilter}
+                  onChangeFilterField={this.onChangeFilterField}
+                />
+                <Student_Events
+                  selectedRegim={selectedRegim}
+                  selectedStudent={selectedStudent}
+                  dataEvents={events}
+                  companies={companies}
+                  addEvent={this.addStudentEvent}
+                  removeEvent={this.removeStudentEvent}
+                  updateEvent={this.updateStudentEvent}
+                />
+              </div>
+            );
+          case Regim.C:
+            return (
+              <div className="students-container">
+                <Companies
+                  selectedRegim={selectedRegim}
+                  companies={companies}
+                  selectedCompany={selectedCompany}
+                  selectCompany={this.selectCompany}
+                  createCompany={this.createCompany}
+                  updateCompany={this.updateCompany}
+                  removeCompany={this.removeCompany}
+                  resetEventsFilter={this.resetEventsFilter}
+                />
+                <CompanyEvents
+                  companyEvents={selectedCompanyEvents}
+                  selectedCompany={selectedCompany}
+                  selectedRegim={selectedRegim}
+                />
+              </div>
+            );
+          case Regim.E:
+            return (
+              <div className="students-container">
+                <Companies
+                  selectedRegim={selectedRegim}
+                  companies={companies}
+                  selectedCompany={selectedCompany}
+                  selectCompany={this.selectCompany}
+                />
+                <CompanyEvents
+                  students={students}
+                  selectedRegim={selectedRegim}
+                  companyEvents={selectedCompanyEvents}
+                  selectedCompany={selectedCompany}
+                  eventFilter={eventFilter}
+                  addEvent={this.addStudentEvent}
+                  removeEvent={this.removeStudentEvent}
+                  updateEvent={this.updateStudentEvent}
+                  onChangeEventFilterField={this.onChangeEventFilterField}
+                  resetEventsFilter={this.resetEventsFilter}
+                />
+              </div>
+            );
+          case Regim.R:
+            return (
+              <div className="students-container">
+                <Companies
+                  selectedRegim={selectedRegim}
+                  companies={companies}
+                  selectedCompany={selectedCompany}
+                  selectCompany={this.selectCompany}
+                />
+                <CompanyContacts
+                  contacts={selectedCompany.contacts}
+                />
+              </div>
+            );
+          default:
+            return null;
+        }
+      }
+
+      render() {
+        return (
+          <div className="panel-container">
+            {this.renderTabPage()}
+          </div>
+        );
+      }
+    }
+
+    class Students extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { selectedMenuOption: '' }
+      }
+
+      onClickOpenCreationWindow = () => {
+        this.setState({ selectedMenuOption: SelectedMenuOption.CREATE_STUDENT });
+      };
+
+      onClickOpenUpdateWindow = () => {
+        this.setState({ selectedMenuOption: SelectedMenuOption.UPDATE_STUDENT });
+      }
+
+      onClickOpenDeleteWindow = () => {
+        this.setState({ selectedMenuOption: SelectedMenuOption.DELETE_STUDENT });
+      }
+
+      onClickOpenFilterWindow = () => {
+        this.setState({ selectedMenuOption: SelectedMenuOption.VIEW_STUDENT_FILTER });
+      }
+
+      onClickCreateStudent = (student) => {
+        this.props.selectStudent(student);
+        this.props.addStudent(student);
+        this.setState({ selectedMenuOption: '' });
+      };
+
+      onClickUpdateStudent = (student) => {
+        this.props.updateStudent(student);
+        this.setState({ selectedMenuOption: '' });
+      }
+
+      onClickRejectCreation = () => {
+        this.props.resetStudentFilter();
+        this.setState({ selectedMenuOption: '' });
+      };
+
+      onClickDeleteStudent = (studentId) => {
+        this.props.removeStudent(studentId);
+        this.setState({ selectedMenuOption: '' });
+      };
+
+      renderMenu = () => {
+        const { selectedMenuOption } = this.state;
+        const {
+          selectedStudent,
+          specialities,
+          resetStudentFilter,
+          onChangeFilterField,
+          studentFilter,
+          years
+        } = this.props;
+
+        const filterSpecialities = [{ name: 'All' }, ...specialities];
+
+        switch (selectedMenuOption) {
+          case SelectedMenuOption.CREATE_STUDENT:
+            return (
+              <AddStudent
+                specialities={specialities}
+                onClickCreateStudent={this.onClickCreateStudent}
+                onClickRejectCreation={this.onClickRejectCreation}
+              />
+            );
+          case SelectedMenuOption.UPDATE_STUDENT:
+            return (
+              <UpdateStudent
+                student={selectedStudent}
+                specialities={specialities}
+                onClickUpdateStudent={this.onClickUpdateStudent}
+                onClickRejectUpdating={this.onClickRejectCreation}
+              />
+            );
+          case SelectedMenuOption.DELETE_STUDENT:
+            return (
+              <DeleteStudent
+                student={selectedStudent}
+                onClickDeleteStudent={this.onClickDeleteStudent}
+                onClickRejectDeleting={this.onClickRejectCreation}
+              />
+            );
+          case SelectedMenuOption.VIEW_STUDENT_FILTER:
+            return (
+              <StudentFilter
+                years={years}
+                studentFilter={studentFilter}
+                specialities={filterSpecialities}
+                onChangeFilterField={onChangeFilterField}
+                onClickFilterReset={resetStudentFilter}
+                onClickCloseFiltering={this.onClickRejectCreation}
+              />
+            )
+          default:
+            return (
+              <div className="button-container">
+                <div className="add-button" onClick={this.onClickOpenCreationWindow} />
+                {selectedStudent && selectedStudent.id ? (
+                  <React.Fragment>
+                    <div className="remove-button" onClick={this.onClickOpenDeleteWindow} />
+                    <div className="reload-button" onClick={this.onClickOpenUpdateWindow} />
+                  </React.Fragment>
+                ) : null}
+                <div className="position-button" onClick={this.onClickOpenFilterWindow} />
+              </div>
+            );
+        }
+      };
+
+      render() {
+        const { selectedMenuOption } = this.state;
+        const { selectStudent, students, selectedStudent } = this.props;
+
+        return (
+          <div className="students-list-container">
+            {this.renderMenu()}
+            <div className={`students-root ${selectedMenuOption
+              ? selectedMenuOption === SelectedMenuOption.VIEW_STUDENT_FILTER
+                ? 'filter-students'
+                : 'creating-students'
+              : ''}`}
+            >
+              {students.map(student => (
+                <div
+                  key={student.id}
+                  onClick={() => selectStudent(student)}
+                  className={selectedStudent.id === student.id ? 'selected-student' : 'student-list-item'}
+                >
+                  {student.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    class Student_Events extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { student: null, selectedOption: '', studentEvent: null };
+      }
+
+      componentDidMount() {
+        this.setState({ student: this.props.selectedStudent, selectedOption: '' });
+      }
+
+      componentDidUpdate(prevProps, prevState) {
+        const { selectedStudent } = this.props;
+
+        if (prevProps.selectedStudent.id !== selectedStudent.id ||
+          (
+            prevProps.selectedStudent.name !== selectedStudent.name ||
+            prevProps.selectedStudent.spec !== selectedStudent.spec ||
+            prevProps.selectedStudent.syear !== selectedStudent.syear)
+        ) {
+          this.setState({ student: selectedStudent, selectedOption: '' });
+        }
+      }
+
+      onClickSelectEvent = (selectedOption, eventId) => {
+        this.setState({
+          selectedOption: selectedOption,
+          studentEvent: this.props.dataEvents.find(ev => ev.id === eventId),
+        });
+      }
+
+      onClickRemoveEvent = (eventId) => {
+        this.props.removeEvent(eventId);
+        this.setState({ selectedOption: '' });
+      }
+
+      onClickUpdateEvent = (event) => {
+        this.props.updateEvent(event);
+        this.setState({ selectedOption: '' });
+      }
+
+      onClickAddEvent = (event) => {
+        this.props.addEvent(event);
+        this.setState({ selectedOption: '' });
+      }
+
+      onClickRejectHandling = () => {
+        this.setState({
+          selectedOption: '',
+        });
+      }
+
+      renderMenu = () => {
+        const { selectedOption, studentEvent, student } = this.state;
+        const { companies } = this.props;
+
+        switch (selectedOption) {
+          case EventOptions.CREATE_EVENT:
+            return (
+              <StudentEventHandler
+                event={studentEvent}
+                selectedOption={selectedOption}
+                student={student}
+                companies={companies}
+                onClickHandleEvent={this.onClickAddEvent}
+                onClickReject={this.onClickRejectHandling}
+              />
+            );
+          case EventOptions.UPDATE_EVENT:
+            return (
+              <StudentEventHandler
+                event={studentEvent}
+                selectedOption={selectedOption}
+                companies={companies}
+                onClickHandleEvent={this.onClickUpdateEvent}
+                onClickReject={this.onClickRejectHandling}
+              />
+            );
+          case EventOptions.REMOVE_EVENT:
+            return (
+              <RemoveStudentEvent
+                event={studentEvent}
+                onClickReject={this.onClickRejectHandling}
+                onClickRemoveEvent={this.onClickRemoveEvent}
+              />
+            );
+          default:
+            return null;
+        }
+      }
+
+      render() {
+        const { student, selectedOption } = this.state;
+        const { dataEvents } = this.props;
+
+        return (
+          <div className="students-description-container">
+            {student && student.id
+              ? <React.Fragment>
+                <div className="student-name-event">
+                  <span className="student-name">{student.id}:{student.name},{student.spec}-{student.group} - {student.syear}</span>
+                  {!selectedOption && (
+                    <div className="event-main-buttons-container">
+                      <div
+                        className="add-button"
+                        onClick={() => this.onClickSelectEvent(EventOptions.CREATE_EVENT, 0)}
+                      />
+                    </div>
+                  )}
+                </div>
+                {this.renderMenu()}
+              </React.Fragment>
+              : null
+            }
+            {student && student.id && dataEvents && dataEvents.length ? dataEvents.map(st => {
+              return st.student.id === student.id ? (
+                <div key={st.id} className="student-description">
+                  <div style={{ marginRight: '10px', display: 'flex' }} className="student-event-main-buttons">
+                    <div
+                      className="reload-button"
+                      onClick={() => this.onClickSelectEvent(EventOptions.UPDATE_EVENT, st.id)}
+                    />
+                    <div
+                      className="remove-button"
+                      onClick={() => this.onClickSelectEvent(EventOptions.REMOVE_EVENT, st.id)}
+                    />
+                  </div>
+                  {st.id}: {st.date}, {st.company.name}, {st.text}
+                </div>) : null
+            }) : null}
+          </div>);
+      }
+    }
+
+    class AddStudent extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          student: {
+            id: 100 + Math.floor(Math.random() * 101),
+            name: '',
+            spec: 'ИСиТ',
+            group: 1,
+            syear: 2010
+          }
+        };
+      }
+
+      onChange = (e) => {
+        const { target: { name, value } } = e;
+        this.setState(prevState => ({
+          student: {
+            ...prevState.student,
+            [name]: value,
+          }
+        }))
+      };
+
+      render() {
+        const { student } = this.state;
+        const { specialities, onClickCreateStudent, onClickRejectCreation } = this.props;
+
+        return (
+          <div className="add-student-root">
+            <span className="student-creation-label">Новый</span>
+            <label className="label">Имя: <input type="text" name="name" value={student.name} onChange={this.onChange} /></label>
+            <SpecList specialities={specialities} name="spec" spec={student.spec}
+              onSelectSpeciality={this.onChange} />
+            <label className="label">Год поступления: <input type="number" min={2010} max={2020} name="syear"
+              value={student.syear} onChange={this.onChange} /></label>
+            <label className="label">Группа: <input type="number" min={1} max={20} name="group" value={student.group}
+              onChange={this.onChange} /></label>
+            <div className="student-creation-button-container">
+              <button disabled={!student.name} onClick={() => onClickCreateStudent(student)}>Добавить</button>
+              <button onClick={onClickRejectCreation}>Отказаться</button>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    class UpdateStudent extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { student: null };
+      }
+
+      componentDidMount() {
+        this.setState({ student: this.props.student });
+      }
+
+      componentDidUpdate(prevProps, prevState) {
+        if (prevProps.student.id !== this.props.student.id) {
+          this.setState({ student: this.props.student })
+        }
+      }
+
+      onChange = (e) => {
+        const { target: { name, value } } = e;
+        this.setState(prevState => ({
+          student: {
+            ...prevState.student,
+            [name]: value,
+          }
+        }))
+      }
+
+      render() {
+        const { student } = this.state;
+        const { specialities, onClickUpdateStudent, onClickRejectUpdating } = this.props;
+
+        return (student && student.id && (
+          <div className="add-student-root">
+            <span className="student-creation-label">Изменить</span>
+            <label className="label">Имя: <input type="text" name="name" value={student.name} onChange={this.onChange} /></label>
+            <SpecList specialities={specialities} name="spec" spec={student.spec} onSelectSpeciality={this.onChange} />
+            <label className="label">Год поступления: <input type="number" min={2010} max={2020} name="syear" value={student.syear} onChange={this.onChange} /></label>
+            <label className="label">Группа: <input type="number" min={1} max={20} name="group" value={student.group} onChange={this.onChange} /></label>
+            <div className="student-creation-button-container">
+              <button disabled={!student.name} onClick={() => onClickUpdateStudent(student)}>Изменить</button>
+              <button onClick={onClickRejectUpdating}>Отказаться</button>
+            </div>
+          </div>
+        ));
+      }
+    }
+
+    class DeleteStudent extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { student: {} };
+      }
+
+      componentDidMount() {
+        const { student } = this.props;
+
+        this.setState({ student: student });
+      }
+
+      render() {
+        const { student } = this.state;
+        const { onClickDeleteStudent, onClickRejectDeleting } = this.props;
+
+        return (
+          <div className="add-student-root">
+            <span className="student-creation-label">Удалить</span>
+            <span className="remove-company-name">{student.name}, {student.spec}-{student.syear}-{student.group}</span>
+            <div className="student-creation-button-container">
+              <button disabled={!student.name} onClick={() => onClickDeleteStudent(student.id)}>Удалить</button>
+              <button onClick={onClickRejectDeleting}>Отказаться</button>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    class Companies extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { selectedMenuOption: '', }
+      }
+
+      onClickOpenCreationWindow = () => {
+        this.setState({ selectedMenuOption: SelectedMenuOption.CREATE_COMPANY });
+      }
+
+      onClickOpenUpdateWindow = () => {
+        this.setState({ selectedMenuOption: SelectedMenuOption.UPDATE_COMPANY });
+      }
+
+      onClickOpenDeleteWindow = () => {
+        this.setState({ selectedMenuOption: SelectedMenuOption.DELETE_COMPANY });
+      }
+
+      onClickRemoveCompany = (companyId) => {
+        this.props.removeCompany(companyId);
+        this.setState({ selectedMenuOption: '' });
+      }
+
+      onClickReject = () => {
+        this.setState({ selectedMenuOption: '' });
+      }
+
+      onClickCreateCompany = (company) => {
+        this.props.createCompany(company);
+        this.setState({ selectedMenuOption: '' });
+      }
+
+      onClickUpdateCompany = (company) => {
+        this.props.updateCompany(company);
+        this.setState({ selectedMenuOption: '' });
+      }
+
+      renderMenu = () => {
+        const { selectedMenuOption } = this.state;
+        const { selectedCompany, selectedRegim } = this.props;
+
+        switch (selectedMenuOption) {
+          case SelectedMenuOption.CREATE_COMPANY:
+            return (
+              <CompanyHandler
+                selectedMenuOption={selectedMenuOption}
+                onClickHandleCompany={this.onClickCreateCompany}
+                onClickReject={this.onClickReject}
+              />
+            );
+          case SelectedMenuOption.UPDATE_COMPANY:
+            return (
+              <CompanyHandler
+                selectedMenuOption={selectedMenuOption}
+                company={selectedCompany}
+                onClickHandleCompany={this.onClickUpdateCompany}
+                onClickReject={this.onClickReject}
+              />
+            );
+          case SelectedMenuOption.DELETE_COMPANY:
+            return (
+              <DeleteCompany
+                company={selectedCompany}
+                onClickRemoveCompany={this.onClickRemoveCompany}
+                onClickReject={this.onClickReject}
+              />
+            );
+          default:
+            return selectedRegim === Regim.C ? (
+              <div className="button-container">
+                <div className="add-button" onClick={this.onClickOpenCreationWindow} />
+                {selectedCompany && selectedCompany.id ? (
+                  <React.Fragment>
+                    <div className="remove-button" onClick={this.onClickOpenDeleteWindow} />
+                    <div className="reload-button" onClick={this.onClickOpenUpdateWindow} />
+                  </React.Fragment>
+                ) : null}
+              </div>
+            ) : null;
+        }
+      }
+
+      render() {
+        const { companies, selectedCompany, selectCompany } = this.props;
+
+        return (
+          <div className="students-list-container">
+            <div className="companies-root">
+              {this.renderMenu()}
+              {companies.map(company => (
+                <div
+                  key={company.id}
+                  onClick={() => selectCompany(company)}
+                  className={selectedCompany.id === company.id
+                    ? 'list-company-item-selected'
+                    : 'list-company-item'}
+                >
+                  {company.name}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    class CompanyEvents extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { selectedOption: '', companyEvent: null };
+      }
+
+      componentDidUpdate(prevProps, prevState) {
+        const { selectedCompany } = this.props;
+
+        if (prevProps.selectedCompany.id !== selectedCompany.id) {
+          this.setState({ selectedOption: '' });
+        }
+      }
+
+      onClickSelectEvent = (selectedOption, eventId) => {
+        this.setState({
+          selectedOption: selectedOption,
+          companyEvent: this.props.companyEvents.find(ev => ev.id === eventId),
+        });
+      }
+
+      onClickAddEvent = (event) => {
+        this.props.addEvent(event);
+        this.setState({
+          selectedOption: '',
+        });
+      }
+
+      onClickUpdateEvent = (event) => {
+        this.props.updateEvent(event);
+        this.setState({
+          selectedOption: '',
+        });
+      }
+
+      onClickRemoveEvent = (eventId) => {
+        this.props.removeEvent(eventId);
+        this.setState({
+          selectedOption: '',
+        });
+      }
+
+      onClickReject = () => {
+        this.props.resetEventsFilter();
+        this.setState({
+          selectedOption: '',
+        });
+      }
+
+      renderMenu = () => {
+        const { selectedOption, companyEvent } = this.state;
+        const {
+          students,
+          selectedCompany,
+          eventFilter,
+          onChangeEventFilterField,
+          resetEventsFilter
+        } = this.props;
+
+        switch (selectedOption) {
+          case EventOptions.CREATE_EVENT:
+            return (
+              <CompanyEventHandler
+                selectedOption={selectedOption}
+                event={companyEvent}
+                students={students}
+                company={selectedCompany}
+                onClickHandleEvent={this.onClickAddEvent}
+                onClickReject={this.onClickReject}
+              />
+            );
+          case EventOptions.UPDATE_EVENT:
+            return (
+              <CompanyEventHandler
+                selectedOption={selectedOption}
+                event={companyEvent}
+                students={students}
+                company={selectedCompany}
+                onClickHandleEvent={this.onClickUpdateEvent}
+                onClickReject={this.onClickReject}
+              />
+            );
+          case EventOptions.REMOVE_EVENT:
+            return (
+              <RemoveCompanyEvent
+                event={companyEvent}
+                onClickRemoveEvent={this.onClickRemoveEvent}
+                onClickReject={this.onClickReject}
+              />
+            );
+          case EventOptions.FILTER_EVENTS:
+            return eventFilter ? (
+              <EventFilter
+                eventFilter={eventFilter}
+                onChangeEventFilterField={onChangeEventFilterField}
+                onClickReject={this.onClickReject}
+                resetEventsFilter={resetEventsFilter}
+              />
+            ) : null;
+          default:
+            return null;
+        }
+      }
+
+      render() {
+        const { companyEvents, selectedCompany, selectedRegim } = this.props;
+        const { selectedOption } = this.state;
+
+        return selectedCompany && selectedCompany.name ? (
+          <div className="events-main-container">
+            <div className="company-event-header">{selectedCompany.name}</div>
+            {(!selectedOption && selectedRegim === Regim.E) && (
+              <div className="event-main-buttons-container">
+                <div
+                  className="add-button"
+                  onClick={() => this.onClickSelectEvent(EventOptions.CREATE_EVENT, 0)}
+                />
+                <div
+                  className="position-button"
+                  onClick={() => this.onClickSelectEvent(EventOptions.FILTER_EVENTS, 0)}
+                />
+              </div>
+            )}
+            {this.renderMenu()}
+            <div className={
+              `company-events-container ${selectedOption ? 'company-events-container-collapsed' : ''}`
+            }
+            >
+              {companyEvents && companyEvents.length ? companyEvents.map(ev => (
+                <div key={ev.id} className="student-description">
+                  {selectedRegim === Regim.E && (
+                    <div className="event-buttons-container">
+                      <div
+                        className="remove-button"
+                        onClick={() => this.onClickSelectEvent(EventOptions.REMOVE_EVENT, ev.id)}
+                      />
+                      <div
+                        className="reload-button"
+                        onClick={() => this.onClickSelectEvent(EventOptions.UPDATE_EVENT, ev.id)}
+                      />
+                    </div>
+                  )}
+                  {ev.id}: {ev.date}, {ev.student.name}, {ev.text}
+                </div>
+              )) : null}
+            </div>
+          </div>
+        ) : null;
+      }
+    }
+
+    class CompanyHandler extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          company: {
+            id: 100 + Math.floor(Math.random() * 101),
+            name: ''
+          }
+        };
+      }
+
+      componentDidMount() {
+        const { company } = this.props;
+
+        this.setState({ company: company && company.id ? company : this.state.company });
+      }
+
+      componentDidUpdate(prevProps, prevState) {
+        if (prevProps.company && prevProps.company.id !== this.props.company.id) {
+          this.setState({ company: this.props.company })
+        }
+      }
+
+      onChange = (e) => {
+        const { target: { name, value } } = e;
+        this.setState(prevState => ({
+          company: {
+            ...prevState.company,
+            [name]: value,
+          }
+        }))
+      }
+
+      render() {
+        const { onClickHandleCompany, onClickReject, selectedMenuOption } = this.props;
+        const { company } = this.state;
+
+        return (
+          <div className="add-student-root">
+            <span className="student-creation-label">{
+              selectedMenuOption === SelectedMenuOption.CREATE_COMPANY
+                ? 'Создать'
+                : 'Изменить'
+            }</span>
+            <label className="label">Имя: <input name="name" value={company.name} onChange={this.onChange} /></label>
+            <div className="student-creation-button-container">
+              <button disabled={!company.name} onClick={() => onClickHandleCompany(company)}>{
+                selectedMenuOption === SelectedMenuOption.CREATE_COMPANY
+                  ? 'Создать'
+                  : 'Изменить'
+              }</button>
+              <button onClick={onClickReject}>Отказаться</button>
+            </div>
+          </div>
+        )
+      }
+    }
+
+    const DeleteCompany = props => {
+      const { company, onClickRemoveCompany, onClickReject } = props;
+
+      return (
+        <div className="add-student-root">
+          <span className="student-creation-label">Удалить</span>
+          <span className="remove-company-name">{company.name}</span>
+          <div className="student-creation-button-container">
+            <button onClick={() => onClickRemoveCompany(company.id)}>Удалить</button>
+            <button onClick={onClickReject}>Отказаться</button>
+          </div>
+        </div>
+      );
+    }
+
+    class StudentEventHandler extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          event: {
+            id: 100 + Math.floor(Math.random() * 101),
+            date: '',
+            text: '',
+            company: {
+              id: 0,
+              name: ''
+            },
+            student: {
+              id: 0,
+              name: '',
+              spec: '',
+              group: 0,
+              syear: 0
+            }
+          },
+        };
+      }
+
+      componentDidMount() {
+        const { event, student, companies } = this.props;
+
+        this.setState({
+          event: event
+            ? event
+            : student
+              ? { ...this.state.event, company: companies[0], student: student }
+              : this.state.event
+
+        });
+      }
+
+      componentDidUpdate(prevProps, prevState) {
+        if (prevProps.event && prevProps.event.id !== this.props.event.id) {
+          this.setState({ event: this.props.event })
+        }
+      }
+
+      onChange = (e) => {
+        const { target: { name, value } } = e;
+        this.setState(prevState => ({
+          event: {
+            ...prevState.event,
+            [name]: value,
+          }
+        }))
+      }
+
+      onSelectCompany = (e) => {
+        const { target: { value } } = e;
+        const { companies } = this.props;
+
+        this.setState(prevState => ({
+          event: {
+            ...prevState.event,
+            company: companies.find(cp => cp.id === Number(value)),
+          }
+        }))
+      }
+
+      onClickHandleChanges = () => this.props.onClickHandleEvent(this.state.event);
+
+      render() {
+        const { companies, selectedOption, onClickReject } = this.props;
+        const { event } = this.state;
+
+        return (
+          <div className="add-student-root">
+            <span className="student-creation-label">
+              {selectedOption === EventOptions.CREATE_EVENT ? 'Новый' : 'Изменить'}
+            </span>
+            <label className="label">Дата: <input type="text" name="date" value={event.date} onChange={this.onChange} /></label>
+            <label className="label">Описание: <input type="text" name="text" value={event.text} onChange={this.onChange} /></label>
+            <CompanyList value={event.company.id} companies={companies} onSelectCompany={this.onSelectCompany} />
+            <div className="student-creation-button-container">
+              <button
+                disabled={!event.date || !event.text}
+                onClick={this.onClickHandleChanges}
+              >
+                {selectedOption === EventOptions.CREATE_EVENT ? 'Создать' : 'Изменить'}
+              </button>
+              <button onClick={onClickReject}>Отказаться</button>
+            </div>
+          </div>
+        );
+      }
+    }
+
+    class CompanyEventHandler extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = {
+          event: {
+            id: 100 + Math.floor(Math.random() * 101),
+            date: '',
+            text: '',
+            company: {
+              id: 0,
+              name: ''
+            },
+            student: {
+              id: 0,
+              name: '',
+              spec: '',
+              group: 0,
+              syear: 0
+            }
+          },
+        };
+      }
+
+      componentDidMount() {
+        const { event, company, students } = this.props;
+
+        this.setState({
+          event: event
+            ? event
+            : company
+              ? { ...this.state.event, company: company, student: students[0] }
+              : this.state.event
+
+        });
+      }
+
+      componentDidUpdate(prevProps, prevState) {
+        if (prevProps.event && prevProps.event.id !== this.props.event.id) {
+          this.setState({ event: this.props.event })
+        }
+      }
+
+      onSelectStudent = (e) => {
+        const { target: { value } } = e;
+        const { students } = this.props;
+
+        this.setState(prevState => ({
+          event: {
+            ...prevState.event,
+            student: students.find(st => st.id === Number(value)),
+          }
+        }))
+      }
+
+      onChange = (e) => {
+        const { target: { name, value } } = e;
+        this.setState(prevState => ({
+          event: {
+            ...prevState.event,
+            [name]: value,
+          }
+        }))
+      }
+
+      onClickHandleChanges = () => this.props.onClickHandleEvent(this.state.event);
+
+      render() {
+        const { students, selectedOption, onClickReject } = this.props;
+        const { event } = this.state;
+
+        return event && event.id ? (
+          <div className="handle-company-root">
+            <span className="student-creation-label">
+              {selectedOption === EventOptions.CREATE_EVENT ? 'Новый' : 'Изменить'}
+            </span>
+            <label className="label">Дата: <input type="text" name="date" value={event.date} onChange={this.onChange} /></label>
+            <label className="label">Описание: <input type="text" name="text" value={event.text} onChange={this.onChange} /></label>
+            <StudentsList students={students} value={event.student.id} onSelectStudent={this.onSelectStudent} />
+            <div className="student-creation-button-container">
+              <button
+                disabled={!event.date || !event.text}
+                onClick={this.onClickHandleChanges}
+              >
+                {selectedOption === EventOptions.CREATE_EVENT ? 'Создать' : 'Изменить'}
+              </button>
+              <button onClick={onClickReject}>Отказаться</button>
+            </div>
+          </div>
+        ) : null;
+      }
+    }
+
+    const CompanyContacts = props => (
+      <div>
+        {props.contacts ? null : <span>No contacts for this company provided</span>}
+      </div>
+    );
+
+    //Remove events
+    const RemoveCompanyEvent = props => {
+      const { event, onClickRemoveEvent, onClickReject } = props;
+
+      return (
+        <div className="handle-company-root">
+          <span className="student-creation-label">Удалить</span>
+          <span>{event.id}: {event.student.name}, {event.date}, {event.text}</span>
+          <div className="student-creation-button-container">
+            <button onClick={() => onClickRemoveEvent(event.id)}>Удалить</button>
+            <button onClick={onClickReject}>Отказаться</button>
+          </div>
+        </div>
+      );
+    }
+
+    const RemoveStudentEvent = props => {
+      const { event, onClickRemoveEvent, onClickReject } = props;
+
+      return (
+        <div className="add-student-root">
+          <span className="student-creation-label">Удалить</span>
+          <span>{event.id}: {event.company.name}, {event.date}, {event.text}</span>
+          <div className="student-creation-button-container">
+            <button onClick={() => onClickRemoveEvent(event.id)}>Удалить</button>
+            <button onClick={onClickReject}>Отказаться</button>
+          </div>
+        </div>
+      );
+    }
+
+    // //Dropdown lists
+    const SpecList = props => (
+      <label className="label">
+        Специальность:
+        <select value={props.spec} name={props.name} onChange={props.onSelectSpeciality}>
+          {props.specialities && props.specialities.length ? props.specialities.map((sp, index) => (
+            <option key={index} value={sp.name}>{sp.name}</option>
+          )) : null}
+        </select>
+      </label>
+    );
+
+    const CompanyList = props => (
+      <label className="label">
+        Компания:
+        <select value={props.value} onChange={props.onSelectCompany}>
+          {props.companies && props.companies.length ? props.companies.map((cp, index) => (
+            <option key={index} value={cp.id}>{cp.name}</option>
+          )) : null}
+        </select>
+      </label>
+    );
+
+    const StudentsList = props => (
+      <label className="label">
+        Студент:
+        <select value={props.value} onChange={props.onSelectStudent}>
+          {props.students && props.students.length ? props.students.map((st, index) => (
+            <option key={index} value={st.id}>{st.name}</option>
+          )) : null}
+        </select>
+      </label>
+    );
+
+    const SYearList = props => (
+      <label className="label">
+        Год поступления:
+        <select value={props.value} name={props.name} onChange={props.onSelectSYear}>
+          {props.years && props.years.length ? props.years.map((st, index) => (
+            <option key={index} value={st.id}>{st.value}</option>
+          )) : null}
+        </select>
+      </label>
+    )
+
+    //Filtering
+    const StudentFilter = props => (
+      <div className="student-filter-container">
+        <span className="student-creation-label">Фильтрация</span>
+        <label className="label">Имя: <input value={props.studentFilter.name} name="name" onChange={props.onChangeFilterField} /></label>
+        <SpecList
+          name="spec"
+          specialities={props.specialities}
+          spec={props.studentFilter.spec}
+          onSelectSpeciality={props.onChangeFilterField}
+        />
+        <SYearList
+          name="year"
+          years={props.years}
+          value={props.studentFilter.year}
+          onSelectSYear={props.onChangeFilterField}
+        />
+        <button onClick={props.onClickFilterReset}>Сбросить фильтр</button>
+        <button onClick={props.onClickCloseFiltering}>Закрыть</button>
+      </div>
+    )
+
+    const EventFilter = props => (
+      <div className="filter-events-container">
+        <span>Фильтрация</span>
+        <label className="label">Название: <input
+          name="text"
+          value={props.eventFilter.text}
+          onChange={props.onChangeEventFilterField}
+        /></label>
+        <label className="label">Дата: <input
+          name="date"
+          value={props.eventFilter.date}
+          onChange={props.onChangeEventFilterField}
+        /></label>
+        <div className="filter-events-buttons">
+          <button onClick={props.resetEventsFilter}>Сбросить фильтр</button>
+          <button onClick={props.onClickReject}>Закрыть</button>
+        </div>
+      </div>
+    )
+
+    ReactDOM.render(
+      <App />,
+      document.getElementById('root')
+    );
+  </script>
+
+
+</body>
+
+</html>

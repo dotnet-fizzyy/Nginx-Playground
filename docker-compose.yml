@@ -11,6 +11,7 @@ services:
 
     # Setup via Dockerfile
     nginx:
+        restart: always
         build: 
             context: .
             dockerfile: Dockerfile
